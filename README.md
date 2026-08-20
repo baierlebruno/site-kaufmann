@@ -62,7 +62,13 @@ O comando cria automaticamente a pasta `out/` com a versão estática do site. E
 app/
 ├── globals.css      # Estilos e responsividade
 ├── layout.tsx       # Metadados e configurações gerais
-└── page.tsx         # Conteúdo e estrutura da página
+├── page.tsx         # Página inicial
+├── site-components.tsx # Menu, rodapé e conteúdos compartilhados
+├── sobre/           # Página Sobre
+├── servicos/        # Página Serviços
+├── produtos/        # Página Produtos
+├── avaliacoes/      # Página Avaliações
+└── contato/         # Página Contato
 
 public/images/       # Fotografias, logotipos e imagens do site
 ```
