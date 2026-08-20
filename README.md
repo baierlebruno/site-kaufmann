@@ -27,8 +27,6 @@ Site institucional responsivo desenvolvido para apresentar a Auto Som Kaufmann, 
 
 O projeto utiliza Next.js no desenvolvimento e pode gerar uma versão estática composta por HTML, CSS e JavaScript.
 
-![Página inicial da Auto Som Kaufmann](public/images/hero-interior.jpg)
-
 ## Funcionalidades
 
 - Apresentação institucional da empresa.
