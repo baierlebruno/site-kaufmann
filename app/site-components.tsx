@@ -1,9 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight, BadgeCheck, BellRing, Building2, CalendarDays, Car, CreditCard,
   ExternalLink, MapPin, Menu, Phone, ShieldCheck, Speaker, Star, X,
@@ -15,6 +13,7 @@ const whatsapp = 'https://wa.me/554530552473?text=Ol%C3%A1%21%20Vim%20pelo%20sit
 const instagram = 'https://www.instagram.com/kaufmann.som/'
 const phone = 'tel:+554530552473'
 const maps = 'https://www.google.com/maps/search/?api=1&query=Rua+Adilson+Bier+66+Jardim+Porto+Alegre+Toledo+PR'
+const googleReviews = 'https://www.google.com/maps/search/?api=1&query=Auto+Som+Kaufmann+Rua+Adilson+Bier+66+Toledo+PR'
 
 const services = [
   { title: 'Som automotivo', text: 'Sistemas de som com alto padrão de qualidade e performance.', image: '/images/svc-som.png', icon: Speaker },
@@ -52,12 +51,12 @@ const reviews = [
 ]
 
 const navItems = [
-  { label: 'Início', href: '/' },
-  { label: 'Sobre', href: '/sobre' },
-  { label: 'Serviços', href: '/servicos' },
-  { label: 'Produtos', href: '/produtos' },
-  { label: 'Avaliações', href: '/avaliacoes' },
-  { label: 'Contato', href: '/contato' },
+  { label: 'Início', id: 'inicio' },
+  { label: 'Sobre', id: 'sobre' },
+  { label: 'Serviços', id: 'servicos' },
+  { label: 'Produtos', id: 'produtos' },
+  { label: 'Avaliações', id: 'avaliacoes' },
+  { label: 'Contato', id: 'contato' },
 ]
 
 function Logo({ className = '' }: { className?: string }) {
@@ -76,10 +75,10 @@ function Fachada() {
   return <img src="/images/fachada-auto-som-kaufmann.jpg" alt="Fachada da Auto Som Kaufmann em Toledo" className="about-image about-img" onError={() => setFailed(true)} />
 }
 
-function BrandLogo({ name, file }: { name: string; file: string }) {
+function BrandLogo({ name, file, duplicate = false }: { name: string; file: string; duplicate?: boolean }) {
   const [failed, setFailed] = useState(false)
   return (
-    <div className="brand-item">
+    <div className="brand-item" aria-hidden={duplicate || undefined}>
       {failed ? <span className="brand-name">{name}</span> : (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={file} alt={name} data-brand={name.toLowerCase()} onError={() => setFailed(true)} />
@@ -90,17 +89,34 @@ function BrandLogo({ name, file }: { name: string; file: string }) {
 
 function Header() {
   const [open, setOpen] = useState(false)
-  const pathname = usePathname()
+  const [activeSection, setActiveSection] = useState('inicio')
   const close = () => setOpen(false)
-  const isActive = (href: string) => pathname === href || (href !== '/' && pathname === `${href}/`)
+
+  useEffect(() => {
+    const updateActiveSection = () => {
+      const marker = window.scrollY + 150
+      let current = 'inicio'
+
+      navItems.forEach((item) => {
+        const section = document.getElementById(item.id)
+        if (section && section.offsetTop <= marker) current = item.id
+      })
+
+      setActiveSection(current)
+    }
+
+    updateActiveSection()
+    window.addEventListener('scroll', updateActiveSection, { passive: true })
+    return () => window.removeEventListener('scroll', updateActiveSection)
+  }, [])
 
   return (
     <header className="site-header">
       <div className="container nav-wrap">
-        <Link href="/" onClick={close} aria-label="Auto Som Kaufmann - início"><Logo /></Link>
+        <a href="#inicio" onClick={close} aria-label="Auto Som Kaufmann - início"><Logo /></a>
         <nav id="main-navigation" className={open ? 'nav open' : 'nav'} aria-label="Navegação principal">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href} onClick={close} className={isActive(item.href) ? 'active' : ''}>{item.label}</Link>
+            <a key={item.id} href={`#${item.id}`} onClick={close} className={activeSection === item.id ? 'active' : ''}>{item.label}</a>
           ))}
         </nav>
         <a className="button button-small nav-cta" href={whatsapp} target="_blank" rel="noopener noreferrer"><FaWhatsapp size={17} /> WhatsApp</a>
@@ -126,7 +142,7 @@ function Footer() {
         </div>
         <div>
           <p className="eyebrow">NAVEGAÇÃO</p>
-          <div className="footer-links">{navItems.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}</div>
+          <div className="footer-links">{navItems.map((item) => <a key={item.id} href={`#${item.id}`}>{item.label}</a>)}</div>
         </div>
       </div>
       <div className="container copyright">Desenvolvido com dedicação para nossos clientes.</div>
@@ -135,10 +151,39 @@ function Footer() {
 }
 
 export function SiteLayout({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const root = document.documentElement
+    const elements = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'))
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    root.classList.add('motion-ready')
+
+    if (reducedMotion) {
+      elements.forEach((element) => element.classList.add('is-visible'))
+      return
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.12, rootMargin: '0px 0px -35px' })
+
+    elements.forEach((element, index) => {
+      element.style.setProperty('--reveal-delay', `${Math.min(index % 6, 5) * 65}ms`)
+      observer.observe(element)
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="site-shell">
       <Header />
-      <main>{children}</main>
+      <main className="page-transition">{children}</main>
       <Footer />
       <a className="floating-whatsapp" href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp"><FaWhatsapp size={26} /></a>
     </div>
@@ -147,14 +192,14 @@ export function SiteLayout({ children }: { children: ReactNode }) {
 
 export function HomeContent() {
   return (
-    <section className="hero">
+    <section id="inicio" className="hero">
       <div className="hero-photo" style={{ backgroundImage: 'url(/images/hero-interior.jpg)' }} role="img" aria-label="Interior de veículo com central multimídia instalada" />
-      <div className="container hero-content">
+      <div className="container hero-content" data-reveal>
         <h1>Tradição, qualidade e<br /> confiança há mais de <em>40 anos</em></h1>
         <p className="hero-subtitle">Som automotivo, acessórios, alarmes e<br className="desktop" /> películas em Toledo e região.</p>
         <div className="hero-actions">
           <a className="button" href={whatsapp} target="_blank" rel="noopener noreferrer"><FaWhatsapp size={19} /> Solicitar orçamento no WhatsApp</a>
-          <Link className="button button-outline" href="/servicos">Conhecer serviços <ArrowRight size={17} /></Link>
+          <a className="button button-outline" href="#servicos">Conhecer serviços <ArrowRight size={17} /></a>
         </div>
         <div className="proofs">
           <div><CalendarDays size={22} /><span>Desde<br /><b>1985</b></span></div>
@@ -168,11 +213,11 @@ export function HomeContent() {
 
 export function AboutContent() {
   return (
-    <section className="section about page-section">
-      <div className="container split">
+    <section id="sobre" className="section about">
+      <div className="container split" data-reveal>
         <div>
           <p className="eyebrow">SOBRE NÓS</p>
-          <h1>Uma história construída<br /> com confiança</h1>
+          <h2>Uma história construída<br /> com confiança</h2>
           <p>Fundada em 1985, a Auto Som Kaufmann é referência em som automotivo, acessórios, alarmes e películas em Toledo e região.</p>
           <p>São mais de 40 anos de tradição, família e compromisso em oferecer tecnologia e atendimento de qualidade para oferecer sempre as melhores soluções para seu veículo e seu dia a dia.</p>
         </div>
@@ -184,24 +229,30 @@ export function AboutContent() {
 
 export function ServicesContent() {
   return (
-    <section className="section services page-section">
+    <section id="servicos" className="section services">
       <div className="container">
         <p className="eyebrow">NOSSOS SERVIÇOS</p>
-        <h1 className="section-title">Nossos serviços</h1>
+        <h2 className="section-title">Nossos serviços</h2>
         <div className="service-grid">
           {services.map((service) => {
             const ServiceIcon = service.icon
             return (
-              <article className="service-card" key={service.title}>
+              <article className="service-card" key={service.title} data-reveal>
                 <div className="service-bg" style={{ backgroundImage: `url(${service.image})` }} />
-                <div className="service-copy"><div className="service-icon"><ServiceIcon size={18} /></div><h2>{service.title}</h2><p>{service.text}</p></div>
+                <div className="service-copy"><div className="service-icon"><ServiceIcon size={18} /></div><h3>{service.title}</h3><p>{service.text}</p></div>
               </article>
             )
           })}
         </div>
         <div className="brands">
           <p className="eyebrow">MARCAS COM QUE TRABALHAMOS</p>
-          <div className="brand-row">{brands.map((brand) => <BrandLogo key={brand.name} name={brand.name} file={brand.file} />)}</div>
+          <div className="brand-carousel" data-reveal>
+            <div className="brand-track">
+              {[...brands, ...brands].map((brand, index) => (
+                <BrandLogo key={`${brand.name}-${index}`} name={brand.name} file={brand.file} duplicate={index >= brands.length} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -210,13 +261,13 @@ export function ServicesContent() {
 
 export function ProductsContent() {
   return (
-    <section className="section products page-section">
+    <section id="produtos" className="section products">
       <div className="container">
         <p className="eyebrow">PRODUTOS</p>
-        <h1 className="section-title">Produtos e acessórios</h1>
+        <h2 className="section-title">Produtos e acessórios</h2>
         <div className="product-grid">
           {products.map((product) => (
-            <article key={product.name} className="product-card">
+            <article key={product.name} className="product-card" data-reveal>
               <div className="product-art" style={{ backgroundImage: `url(${product.image})` }} role="img" aria-label={product.name} />
               <span>{product.name}</span>
             </article>
@@ -230,16 +281,19 @@ export function ProductsContent() {
 
 export function ReviewsContent() {
   return (
-    <section className="section reviews page-section">
+    <section id="avaliacoes" className="section reviews">
       <div className="container reviews-wrap">
-        <div className="rating">
+        <div className="rating" data-reveal>
           <p className="eyebrow">QUEM CONHECE, RECOMENDA</p>
-          <h1>4,9<small>/5</small></h1>
+          <strong>4,9<small>/5</small></strong>
           <div className="stars">★★★★★</div>
           <p><FcGoogle className="google-icon" /> Avaliações no Google</p>
+          <a className="google-reviews-link" href={googleReviews} target="_blank" rel="noopener noreferrer">
+            Ver todas <ExternalLink size={13} />
+          </a>
         </div>
         <div className="review-grid">
-          {reviews.map(([name, text]) => <article key={name}><div className="stars small">★★★★★</div><p>{text}</p><b>{name}</b></article>)}
+          {reviews.map(([name, text]) => <article key={name} data-reveal><div className="stars small">★★★★★</div><p>{text}</p><b>{name}</b></article>)}
         </div>
       </div>
     </section>
@@ -249,21 +303,28 @@ export function ReviewsContent() {
 export function ContactContent() {
   return (
     <>
-      <section className="section contact page-section">
+      <section id="contato" className="section contact">
         <div className="container">
-          <p className="eyebrow">FALE CONOSCO</p>
-          <h1 className="section-title">Contato e localização</h1>
+          <div className="contact-heading" data-reveal>
+            <p className="eyebrow">FALE CONOSCO</p>
+            <h2 className="section-title">Contato e localização</h2>
+          </div>
           <div className="contact-grid">
-            <div><p className="eyebrow">ATENDEMOS TOLEDO E REGIÃO</p><p>Serviços fora de Toledo devem ser consultados previamente.</p></div>
-            <div className="address">
-              <MapPin size={20} /><p>Rua Adilson Bier, 66<br />Jardim Porto Alegre<br />Toledo - PR</p>
-              <a className="button button-small" href={maps} target="_blank" rel="noopener noreferrer">Abrir no Google Maps <ExternalLink size={15} /></a>
+            <div className="contact-details">
+              <div className="contact-panel" data-reveal>
+                <p className="eyebrow">ATENDEMOS TOLEDO E REGIÃO</p>
+                <p>Serviços fora de Toledo devem ser consultados previamente.</p>
+              </div>
+              <div className="address contact-panel" data-reveal>
+                <MapPin size={20} /><p>Rua Adilson Bier, 66<br />Jardim Porto Alegre<br />Toledo - PR</p>
+                <a className="button button-small" href={maps} target="_blank" rel="noopener noreferrer">Abrir no Google Maps <ExternalLink size={15} /></a>
+              </div>
             </div>
-            <iframe className="map" src="https://www.google.com/maps?q=Rua+Adilson+Bier,+66,+Jardim+Porto+Alegre,+Toledo,+PR&output=embed" title="Localização da Auto Som Kaufmann no Google Maps" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
+            <iframe className="map" data-reveal src="https://www.google.com/maps?q=Rua+Adilson+Bier,+66,+Jardim+Porto+Alegre,+Toledo,+PR&output=embed" title="Localização da Auto Som Kaufmann no Google Maps" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
           </div>
         </div>
       </section>
-      <section className="cta">
+      <section className="cta" data-reveal>
         <div className="container cta-inner">
           <h2>PRECISA DE UM ORÇAMENTO?</h2>
           <div className="cta-grid">

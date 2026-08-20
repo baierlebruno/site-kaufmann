@@ -1,5 +1,21 @@
-import { HomeContent } from './site-components'
+import {
+  AboutContent,
+  ContactContent,
+  HomeContent,
+  ProductsContent,
+  ReviewsContent,
+  ServicesContent,
+} from './site-components'
 
 export default function HomePage() {
-  return <HomeContent />
+  return (
+    <>
+      <HomeContent />
+      <AboutContent />
+      <ServicesContent />
+      <ProductsContent />
+      <ReviewsContent />
+      <ContactContent />
+    </>
+  )
 }
